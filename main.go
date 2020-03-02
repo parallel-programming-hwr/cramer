@@ -9,26 +9,36 @@ func main() {
 
 	matrix := [][]int{{2, 3, 5, 2}, {1, 3, 2, 5}, {2, 5, 1, 6}, {1, 5, 2, 7}}
 	b := []int{2, 2, 7, 8}
+	checkMatAndVec(matrix, b)
 	fmt.Printf("Matrix: \n")
 	outMat(matrix)
 	checkMat(matrix)
 	detM := getDet(matrix)
-	x := []float32{}
+	x := make([]float32, len(matrix))
+	var ch = make(chan int)
 	for i := 0; i < len(matrix); i++ {
-		matai := copyMat(matrix)
-		for j := 0; j < len(matrix[i]); j++ {
-			matai[j][i] = b[j]
-		}
-		detai := getDet(matai)
-		fmt.Printf("\nMatrix %d\n", i)
-		outMat(matai)
-		fmt.Printf("Determinante %d => x%d = %f\n", detai, i, float32(getDet(matai))/float32(detM))
-		x = append(x, float32(getDet(matai))/float32(detM))
+		go calcX(matrix, x, b, i, detM, ch)
 	}
 	fmt.Printf("\nLoesungsvektor: \n")
+	for l := 0; l < len(x); l++ {
+		<-ch
+	}
 	for k := 0; k < len(x); k++ {
 		fmt.Printf("x%d = %f \n", k, x[k])
 	}
+}
+
+func calcX(matrix [][]int, x []float32, b []int, i int, detM int, ch chan int) {
+	matai := copyMat(matrix)
+	for j := 0; j < len(matrix[i]); j++ {
+		matai[j][i] = b[j]
+	}
+	detai := getDet(matai)
+	//fmt.Printf("\nMatrix %d\n", i)
+	//outMat(matai)
+	//fmt.Printf("Determinante %d => x%d = %f\n", detai, i, float32(getDet(matai))/float32(detM))
+	x[i] = float32(detai) / float32(detM)
+	ch <- 1
 }
 
 func checkMat(mat [][]int) {
@@ -38,6 +48,14 @@ func checkMat(mat [][]int) {
 			os.Exit(1)
 		}
 
+	}
+}
+
+func checkMatAndVec(matrix [][]int, b []int) {
+	checkMat(matrix)
+	if len(matrix) != len(b) {
+		fmt.Printf("Matrix und vektor nicht gleich groß")
+		os.Exit(1)
 	}
 }
 
